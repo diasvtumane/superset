@@ -69,7 +69,7 @@ import {
 } from 'src/components';
 import SubMenu, { SubMenuProps } from 'src/features/home/SubMenu';
 import { Link, useHistory } from 'react-router-dom';
-import { dangerouslyGetItemDoNotUse } from 'src/utils/localStorageHelpers';
+import { getUserThumbnailPreference } from 'src/utils/localStorageHelpers';
 import withToasts from 'src/components/MessageToasts/withToasts';
 import PropertiesModal from 'src/explore/components/PropertiesModal';
 import Chart from 'src/types/Chart';
@@ -224,13 +224,8 @@ function ChartList(props: ChartListProps) {
     setSSHTunnelPrivateKeyPasswordFields,
   ] = useState<string[]>([]);
 
-  // TODO: Fix usage of localStorage keying on the user id
-  const userSettings = useMemo(
-    () =>
-      dangerouslyGetItemDoNotUse(userId?.toString(), null) as {
-        thumbnails: boolean;
-      },
-    [userId],
+  const userThumbnailPref = getUserThumbnailPreference(
+    userId?.toString() ?? '',
   );
 
   const openChartImportModal = () => {
@@ -791,11 +786,7 @@ function ChartList(props: ChartListProps) {
     (chart: Chart) => (
       <ChartCard
         chart={chart}
-        showThumbnails={
-          userSettings
-            ? userSettings.thumbnails
-            : isFeatureEnabled(FeatureFlag.Thumbnails)
-        }
+        showThumbnails={userThumbnailPref ?? isFeatureEnabled(FeatureFlag.Thumbnails)}
         hasPerm={hasPerm}
         openChartEditModal={openChartEditModal}
         bulkSelectEnabled={bulkSelectEnabled}
@@ -821,7 +812,7 @@ function ChartList(props: ChartListProps) {
       refreshData,
       saveFavoriteStatus,
       userId,
-      userSettings,
+      userThumbnailPref,
     ],
   );
 
@@ -920,9 +911,8 @@ function ChartList(props: ChartListProps) {
               addSuccessToast={addSuccessToast}
               addDangerToast={addDangerToast}
               showThumbnails={
-                userSettings
-                  ? userSettings.thumbnails
-                  : isFeatureEnabled(FeatureFlag.Thumbnails)
+                userThumbnailPref ??
+                isFeatureEnabled(FeatureFlag.Thumbnails)
               }
               defaultViewMode={
                 isFeatureEnabled(FeatureFlag.ListviewsDefaultCardView)

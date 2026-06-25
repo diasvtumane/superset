@@ -59,7 +59,7 @@ import {
 } from 'src/components';
 import handleResourceExport from 'src/utils/export';
 import SubMenu, { SubMenuProps } from 'src/features/home/SubMenu';
-import { dangerouslyGetItemDoNotUse } from 'src/utils/localStorageHelpers';
+import { getUserThumbnailPreference } from 'src/utils/localStorageHelpers';
 import Owner from 'src/types/Owner';
 import withToasts from 'src/components/MessageToasts/withToasts';
 import { Icons } from '@superset-ui/core/components/Icons';
@@ -234,8 +234,9 @@ function DashboardList(props: DashboardListProps) {
     addSuccessToast(t('Dashboard imported'));
   };
 
-  // TODO: Fix usage of localStorage keying on the user id
-  const userKey = dangerouslyGetItemDoNotUse(user?.userId?.toString(), null);
+  const userThumbnailPref = getUserThumbnailPreference(
+    user?.userId?.toString() ?? '',
+  );
 
   const canCreate = hasPerm('can_write');
   const canEdit = hasPerm('can_write');
@@ -703,9 +704,7 @@ function DashboardList(props: DashboardListProps) {
         hasPerm={hasPerm}
         bulkSelectEnabled={bulkSelectEnabled}
         showThumbnails={
-          userKey
-            ? userKey.thumbnails
-            : isFeatureEnabled(FeatureFlag.Thumbnails)
+          userThumbnailPref ?? isFeatureEnabled(FeatureFlag.Thumbnails)
         }
         userId={user?.userId}
         loading={loading}
@@ -723,7 +722,7 @@ function DashboardList(props: DashboardListProps) {
       loading,
       user?.userId,
       saveFavoriteStatus,
-      userKey,
+      userThumbnailPref,
       handleBulkDashboardExport,
       openDashboardEditModal,
     ],
@@ -847,9 +846,7 @@ function DashboardList(props: DashboardListProps) {
                 addSuccessToast={addSuccessToast}
                 addDangerToast={addDangerToast}
                 showThumbnails={
-                  userKey
-                    ? userKey.thumbnails
-                    : isFeatureEnabled(FeatureFlag.Thumbnails)
+                  userThumbnailPref ?? isFeatureEnabled(FeatureFlag.Thumbnails)
                 }
                 renderCard={renderCard}
                 defaultViewMode={
