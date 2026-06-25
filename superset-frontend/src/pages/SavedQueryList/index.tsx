@@ -26,7 +26,6 @@ import {
 import { styled } from '@apache-superset/core/theme';
 import { useCallback, useMemo, useState, MouseEvent } from 'react';
 import { Link, useHistory } from 'react-router-dom';
-import rison from 'rison';
 import {
   createErrorHandler,
   createFetchDistinct,
@@ -41,7 +40,11 @@ import {
   Tooltip,
 } from '@superset-ui/core/components';
 import withToasts from 'src/components/MessageToasts/withToasts';
-import { useListViewResource } from 'src/views/CRUD/hooks';
+import {
+  useListViewResource,
+  useSingleResourceDelete,
+  useBulkResourceDelete,
+} from 'src/views/CRUD/hooks';
 import {
   ImportModal as ImportModelsModal,
   TagType,
@@ -139,8 +142,14 @@ function SavedQueryList({
     state => state.user,
   );
   const canReadTag = findPermission('can_read', 'Tag', roles);
-  const [queryCurrentlyDeleting, setQueryCurrentlyDeleting] =
-    useState<SavedQueryObject | null>(null);
+  const [queryCurrentlyDeleting, setQueryCurrentlyDeleting, handleQueryDelete] =
+    useSingleResourceDelete<SavedQueryObject>(
+      'saved_query',
+      'label',
+      refreshData,
+      addSuccessToast,
+      addDangerToast,
+    );
   const [savedQueryCurrentlyPreviewing, setSavedQueryCurrentlyPreviewing] =
     useState<SavedQueryObject | null>(null);
   const [importingSavedQuery, showImportModal] = useState<boolean>(false);
@@ -293,21 +302,6 @@ function SavedQueryList({
     [addDangerToast, addSuccessToast],
   );
 
-  const handleQueryDelete = ({ id, label }: SavedQueryObject) => {
-    SupersetClient.delete({
-      endpoint: `/api/v1/saved_query/${id}`,
-    }).then(
-      () => {
-        refreshData();
-        setQueryCurrentlyDeleting(null);
-        addSuccessToast(t('Deleted: %s', label));
-      },
-      createErrorHandler(errMsg =>
-        addDangerToast(t('There was an issue deleting %s: %s', label, errMsg)),
-      ),
-    );
-  };
-
   const handleBulkSavedQueryExport = async (
     savedQueriesToExport: SavedQueryObject[],
   ) => {
@@ -323,23 +317,13 @@ function SavedQueryList({
     }
   };
 
-  const handleBulkQueryDelete = (queriesToDelete: SavedQueryObject[]) => {
-    SupersetClient.delete({
-      endpoint: `/api/v1/saved_query/?q=${rison.encode(
-        queriesToDelete.map(({ id }) => id),
-      )}`,
-    }).then(
-      ({ json = {} }) => {
-        refreshData();
-        addSuccessToast(json.message);
-      },
-      createErrorHandler(errMsg =>
-        addDangerToast(
-          t('There was an issue deleting the selected queries: %s', errMsg),
-        ),
-      ),
-    );
-  };
+  const handleBulkQueryDelete = useBulkResourceDelete<SavedQueryObject>(
+    'saved_query',
+    t('queries'),
+    refreshData,
+    addSuccessToast,
+    addDangerToast,
+  );
 
   const initialSort = [{ id: 'changed_on_delta_humanized', desc: true }];
   const columns = useMemo(

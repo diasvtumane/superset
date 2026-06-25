@@ -921,3 +921,96 @@ export const reportSelector = (
   }
   return null;
 };
+
+/**
+ * Shared hook for single-resource deletion via the REST API.
+ *
+ * Returns ``[itemPendingDelete, setItemPendingDelete, handleDelete]``.
+ *
+ * ``handleDelete`` calls ``DELETE /api/v1/{resourceName}/{id}`` and
+ * invokes the success/error callbacks provided in the config.
+ */
+export function useSingleResourceDelete<
+  T extends { id?: number; [key: string]: any },
+>(
+  resourceName: string,
+  displayNameField: string,
+  refreshData: () => void,
+  addSuccessToast: (msg: string) => void,
+  addDangerToast: (msg: string) => void,
+) {
+  const [itemPendingDelete, setItemPendingDelete] = useState<T | null>(null);
+
+  const handleDelete = useCallback(
+    (item: T) => {
+      const displayName = String(item[displayNameField] ?? item.id);
+      SupersetClient.delete({
+        endpoint: `/api/v1/${resourceName}/${item.id}`,
+      }).then(
+        () => {
+          refreshData();
+          setItemPendingDelete(null);
+          addSuccessToast(t('Deleted: %s', displayName));
+        },
+        createErrorHandler(errMsg =>
+          addDangerToast(
+            t('There was an issue deleting %s: %s', displayName, errMsg),
+          ),
+        ),
+      );
+    },
+    [
+      resourceName,
+      displayNameField,
+      refreshData,
+      addSuccessToast,
+      addDangerToast,
+    ],
+  );
+
+  return [itemPendingDelete, setItemPendingDelete, handleDelete] as const;
+}
+
+/**
+ * Shared hook for bulk-resource deletion via the REST API.
+ *
+ * Returns a stable ``handleBulkDelete`` callback that sends
+ * ``DELETE /api/v1/{resourceName}/?q=<rison-encoded ids>`` and
+ * shows a success/error toast.
+ */
+export function useBulkResourceDelete<
+  T extends { id?: number; [key: string]: any },
+>(
+  resourceName: string,
+  resourceLabel: string,
+  refreshData: () => void,
+  addSuccessToast: (msg: string) => void,
+  addDangerToast: (msg: string) => void,
+) {
+  const handleBulkDelete = useCallback(
+    (items: T[]) => {
+      SupersetClient.delete({
+        endpoint: `/api/v1/${resourceName}/?q=${rison.encode(
+          items.map(({ id }) => id),
+        )}`,
+      }).then(
+        ({ json = {} }: { json: Record<string, string> }) => {
+          refreshData();
+          addSuccessToast(json.message);
+        },
+        createErrorHandler(errMsg =>
+          addDangerToast(
+            t(
+              'There was an issue deleting the selected %s: %s',
+              resourceLabel,
+              errMsg,
+            ),
+          ),
+        ),
+      );
+    },
+    [resourceName, resourceLabel, refreshData, addSuccessToast, addDangerToast],
+  );
+
+  return handleBulkDelete;
+}

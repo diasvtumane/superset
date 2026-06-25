@@ -20,11 +20,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useHistory } from 'react-router-dom';
 import { t } from '@apache-superset/core/translation';
-import {
-  SupersetClient,
-  makeApi,
-  getExtensionsRegistry,
-} from '@superset-ui/core';
+import { makeApi, getExtensionsRegistry } from '@superset-ui/core';
 import { css, styled } from '@apache-superset/core/theme';
 import { extendedDayjs } from '@superset-ui/core/utils/dates';
 import {
@@ -52,6 +48,7 @@ import RecipientIcon from 'src/features/alerts/components/RecipientIcon';
 import {
   useListViewResource,
   useSingleViewResource,
+  useSingleResourceDelete,
 } from 'src/views/CRUD/hooks';
 import {
   createErrorHandler,
@@ -165,8 +162,14 @@ function AlertList({
   const [currentAlert, setCurrentAlert] = useState<Partial<AlertObject> | null>(
     null,
   );
-  const [currentAlertDeleting, setCurrentAlertDeleting] =
-    useState<AlertObject | null>(null);
+  const [currentAlertDeleting, setCurrentAlertDeleting, handleAlertDelete] =
+    useSingleResourceDelete<AlertObject>(
+      'report',
+      'name',
+      refreshData,
+      addSuccessToast,
+      addDangerToast,
+    );
 
   // Actions
   function handleAlertEdit(alert: AlertObject | null) {
@@ -185,21 +188,6 @@ function AlertList({
       toggleBulkSelect();
     }
   }, [isReportEnabled]);
-
-  const handleAlertDelete = ({ id, name }: AlertObject) => {
-    SupersetClient.delete({
-      endpoint: `/api/v1/report/${id}`,
-    }).then(
-      () => {
-        refreshData();
-        setCurrentAlertDeleting(null);
-        addSuccessToast(t('Deleted: %s', name));
-      },
-      createErrorHandler(errMsg =>
-        addDangerToast(t('There was an issue deleting %s: %s', name, errMsg)),
-      ),
-    );
-  };
 
   const handleBulkAlertDelete = async (alertsToDelete: AlertObject[]) => {
     try {
