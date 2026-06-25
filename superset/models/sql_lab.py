@@ -519,7 +519,7 @@ class SavedQuery(
 
     @property
     def pop_tab_link(self) -> Markup:
-        return Markup(
+        return Markup(  # noqa: S704
             f"""
             <a href="/sqllab?savedQueryId={self.id}">
                 <i class="fa fa-link"></i>
@@ -600,14 +600,12 @@ class TabState(AuditMixinNullable, ExtraJSONMixin, Model):
         try:
             if self.latest_query:
                 latest_query = self.latest_query.to_dict()
-        except Exception:
-            query = self.__dict__.get("latest_query")
+        except Exception:  # pylint: disable=broad-except
             logger.warning(
                 "Failed to load/serialize latest_query for tab state %s "
-                "(latest_query_id=%s, query_status=%s)",
+                "(latest_query_id=%s)",
                 self.id,
                 self.latest_query_id,
-                getattr(query, "status", "N/A"),
                 exc_info=True,
             )
 

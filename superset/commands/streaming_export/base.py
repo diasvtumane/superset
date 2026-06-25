@@ -292,13 +292,9 @@ class BaseStreamingCSVExportCommand(BaseCommand):
                         yield from self._execute_query_and_stream(
                             sql, database, limit, catalog, schema
                         )
-                    except Exception as e:
-                        logger.error("Error in streaming CSV generator: %s", e)
-                        import traceback
+                    except Exception:
+                        logger.exception("Error in streaming CSV generator")
 
-                        logger.error("Traceback: %s", traceback.format_exc())
-
-                        # Send error marker for frontend to detect
                         error_marker = (
                             "__STREAM_ERROR__:Export failed. "
                             "Please try again in some time.\n"

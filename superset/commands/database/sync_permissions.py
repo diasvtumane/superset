@@ -332,8 +332,8 @@ def sync_database_permissions_task(
             )
 
         except Exception:
-            logger.error(
+            logger.exception(
                 "An error occurred while syncing permissions for DB connection ID %s",
                 database_id,
-                exc_info=True,
             )
+            raise
