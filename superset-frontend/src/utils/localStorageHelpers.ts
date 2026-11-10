@@ -57,6 +57,7 @@ export enum LocalStorageKeys {
   DashboardExploreContext = 'dashboard__explore_context',
   DashboardEditorShowOnlyMyCharts = 'dashboard__editor_show_only_my_charts',
   CommonResizableSidebarWidths = 'common__resizable_sidebar_widths',
+  HomepageUserThumbnailPreference = 'homepage__user_thumbnail_preference',
 }
 
 export type LocalStorageValues = {
@@ -78,6 +79,7 @@ export type LocalStorageValues = {
   dashboard__explore_context: Record<string, DashboardContextForExplore>;
   dashboard__editor_show_only_my_charts: boolean;
   common__resizable_sidebar_widths: Record<string, number>;
+  homepage__user_thumbnail_preference: Record<string, boolean>;
 };
 
 /*
@@ -129,4 +131,32 @@ export function setItem<K extends LocalStorageKeys>(
   value: LocalStorageValues[K],
 ): void {
   dangerouslySetItemDoNotUse(key, value);
+}
+
+export function getUserThumbnailPreference(
+  userId: string,
+): boolean | undefined {
+  const prefs = getItem(LocalStorageKeys.HomepageUserThumbnailPreference, {});
+  if (userId in prefs) {
+    return prefs[userId];
+  }
+  const legacyValue = dangerouslyGetItemDoNotUse(userId, null) as {
+    thumbnails?: boolean;
+  } | null;
+  if (legacyValue?.thumbnails !== undefined) {
+    setUserThumbnailPreference(userId, legacyValue.thumbnails);
+    return legacyValue.thumbnails;
+  }
+  return undefined;
+}
+
+export function setUserThumbnailPreference(
+  userId: string,
+  value: boolean,
+): void {
+  const prefs = getItem(LocalStorageKeys.HomepageUserThumbnailPreference, {});
+  setItem(LocalStorageKeys.HomepageUserThumbnailPreference, {
+    ...prefs,
+    [userId]: value,
+  });
 }

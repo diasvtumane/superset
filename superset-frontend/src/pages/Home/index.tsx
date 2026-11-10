@@ -30,11 +30,11 @@ import { Collapse, ListViewCard } from '@superset-ui/core/components';
 import { User } from 'src/types/bootstrapTypes';
 import { reject } from 'lodash';
 import {
-  dangerouslyGetItemDoNotUse,
-  dangerouslySetItemDoNotUse,
   getItem,
   LocalStorageKeys,
   setItem,
+  getUserThumbnailPreference,
+  setUserThumbnailPreference,
 } from 'src/utils/localStorageHelpers';
 import withToasts from 'src/components/MessageToasts/withToasts';
 import {
@@ -153,13 +153,9 @@ function Welcome({ user, addDangerToast }: WelcomeProps) {
   const params = rison.encode({ page_size: 24, distinct: false });
   const recent = `/api/v1/log/recent_activity/?q=${params}`;
   const [activeChild, setActiveChild] = useState('Loading');
-  const userKey = dangerouslyGetItemDoNotUse(id, null);
-  let defaultChecked = false;
   const isThumbnailsEnabled = isFeatureEnabled(FeatureFlag.Thumbnails);
-  if (isThumbnailsEnabled) {
-    defaultChecked =
-      userKey?.thumbnails === undefined ? true : userKey?.thumbnails;
-  }
+  const savedPref = getUserThumbnailPreference(id);
+  const defaultChecked = isThumbnailsEnabled ? (savedPref ?? true) : false;
   const [checked, setChecked] = useState(defaultChecked);
   const [activityData, setActivityData] = useState<ActivityData | null>(null);
   const [chartData, setChartData] = useState<Array<object> | null>(null);
@@ -294,7 +290,7 @@ function Welcome({ user, addDangerToast }: WelcomeProps) {
 
   const handleToggle = () => {
     setChecked(!checked);
-    dangerouslySetItemDoNotUse(id, { thumbnails: !checked });
+    setUserThumbnailPreference(id, !checked);
   };
 
   useEffect(() => {
